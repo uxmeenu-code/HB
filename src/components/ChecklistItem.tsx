@@ -1,0 +1,138 @@
+import { useState } from 'react'
+import { Check, X, Minus, Camera, Mic, MapPin, Image } from 'lucide-react'
+import type { ChecklistItem as ChecklistItemType, InspectionPhoto, VoiceNote, ChecklistItemStatus } from '../types'
+import CameraCapture from './CameraCapture'
+import VoiceNoteRecorder from './VoiceNote'
+import PhotoAnnotator from './PhotoAnnotator'
+import { getCurrentGPS } from '../utils/gps'
+import { formatGPS, formatTimestamp } from '../utils/gps'
+
+interface ChecklistItemProps {
+  item: ChecklistItemType
+  index: number
+  onUpdate: (updated: ChecklistItemType) => void
+}
+
+export default function ChecklistItemComponent({ item, index, onUpdate }: ChecklistItemProps) {
+  const [showCamera, setShowCamera] = useState(false)
+  const [showVoice, setShowVoice] = useState(false)
+  const [annotatingPhoto, setAnnotatingPhoto] = useState<InspectionPhoto | null>(null)
+  const [expanded, setExpanded] = useState(item.status === 'pending')
+
+  const setStatus = async (status: ChecklistItemStatus) => {
+    const gps = await getCurrentGPS()
+    onUpdate({
+      ...item,
+      status,
+      gps,
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  const addPhoto = (photo: InspectionPhoto) => {
+    onUpdate({ ...item, photos: [...item.photos, photo] })
+  }
+
+  const addVoiceNote = (note: VoiceNote) => {
+    onUpdate({ ...item, voiceNotes: [...item.voiceNotes, note] })
+  }
+
+  const updatePhotoAnnotations = (photoId: string, annotations: import('../types').PhotoAnnotation[]) => {
+    onUpdate({
+      ...item,
+      photos: item.photos.map(p => p.id === photoId ? { ...p, annotations } : p),
+    })
+  }
+
+  return (
+    <div className={`checklist-item ${item.status !== 'pending' ? `status-${item.status}` : ''}`}>
+      <div className="checklist-item-header" onClick={() => setExpanded(!expanded)}>
+        <span className="item-number">{index + 1}</span>
+        <div className="item-info">
+          <h4>{item.label}</h4>
+          {item.category && <span className="item-category">{item.category}</span>}
+        </div>
+        <div className="item-status-badge">{item.status !== 'pending' ? item.status : ''}</div>
+      </div>
+
+      {expanded && (
+        <div className="checklist-item-body">
+          {item.description && <p className="item-desc">{item.description}</p>}
+
+          <div className="status-buttons">
+            <button className="status-btn pass" onClick={() => setStatus('pass')}>
+              <Check size={18} /> Pass
+            </button>
+            <button className="status-btn fail" onClick={() => setStatus('fail')}>
+              <X size={18} /> Fail
+            </button>
+            <button className="status-btn na" onClick={() => setStatus('na')}>
+              <Minus size={18} /> N/A
+            </button>
+          </div>
+
+          <textarea
+            className="input item-notes"
+            placeholder="Add notes..."
+            value={item.notes || ''}
+            onChange={e => onUpdate({ ...item, notes: e.target.value })}
+            rows={2}
+          />
+
+          <div className="item-actions">
+            <button className="action-btn" onClick={() => setShowCamera(true)}>
+              <Camera size={18} /> Photo
+            </button>
+            <button className="action-btn" onClick={() => setShowVoice(true)}>
+              <Mic size={18} /> Voice
+            </button>
+          </div>
+
+          {item.photos.length > 0 && (
+            <div className="photo-grid">
+              {item.photos.map(photo => (
+                <div key={photo.id} className="photo-thumb" onClick={() => setAnnotatingPhoto(photo)}>
+                  <img src={photo.dataUrl} alt={photo.caption || 'Photo'} />
+                  {photo.severity && <span className={`photo-severity severity-${photo.severity}`}>{photo.severity}</span>}
+                  {photo.annotations.length > 0 && <span className="photo-annotated"><Image size={12} /></span>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {item.voiceNotes.length > 0 && (
+            <div className="voice-notes-list">
+              {item.voiceNotes.map(note => (
+                <div key={note.id} className="voice-note-item">
+                  <Mic size={14} />
+                  <p>{note.text}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {item.gps && (
+            <div className="gps-stamp">
+              <MapPin size={12} />
+              <span>{formatGPS(item.gps)} · {formatTimestamp(item.timestamp || item.gps.timestamp)}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {showCamera && <CameraCapture onCapture={addPhoto} onClose={() => setShowCamera(false)} />}
+      {showVoice && <VoiceNoteRecorder onSave={addVoiceNote} onClose={() => setShowVoice(false)} />}
+      {annotatingPhoto && (
+        <PhotoAnnotator
+          imageUrl={annotatingPhoto.dataUrl}
+          annotations={annotatingPhoto.annotations}
+          onSave={(annotations) => {
+            updatePhotoAnnotations(annotatingPhoto.id, annotations)
+            setAnnotatingPhoto(null)
+          }}
+          onClose={() => setAnnotatingPhoto(null)}
+        />
+      )}
+    </div>
+  )
+}
