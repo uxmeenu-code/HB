@@ -1,10 +1,8 @@
 import { useState } from 'react'
-import { Check, X, Minus, Camera, Mic, MapPin, Image } from 'lucide-react'
-import type { ChecklistItem as ChecklistItemType, InspectionPhoto, VoiceNote, ChecklistItemStatus } from '../types'
+import { Check, X, Minus, Camera, MapPin, Image } from 'lucide-react'
+import type { ChecklistItem as ChecklistItemType, InspectionPhoto, ChecklistItemStatus } from '../types'
 import CameraCapture from './CameraCapture'
-import VoiceNoteRecorder from './VoiceNote'
 import PhotoAnnotator from './PhotoAnnotator'
-import { getCurrentGPS } from '../utils/gps'
 import { formatGPS, formatTimestamp } from '../utils/gps'
 
 interface ChecklistItemProps {
@@ -15,26 +13,19 @@ interface ChecklistItemProps {
 
 export default function ChecklistItemComponent({ item, index, onUpdate }: ChecklistItemProps) {
   const [showCamera, setShowCamera] = useState(false)
-  const [showVoice, setShowVoice] = useState(false)
   const [annotatingPhoto, setAnnotatingPhoto] = useState<InspectionPhoto | null>(null)
   const [expanded, setExpanded] = useState(item.status === 'pending')
 
-  const setStatus = async (status: ChecklistItemStatus) => {
-    const gps = await getCurrentGPS()
+  const setStatus = (status: ChecklistItemStatus) => {
     onUpdate({
       ...item,
       status,
-      gps,
       timestamp: new Date().toISOString(),
     })
   }
 
   const addPhoto = (photo: InspectionPhoto) => {
     onUpdate({ ...item, photos: [...item.photos, photo] })
-  }
-
-  const addVoiceNote = (note: VoiceNote) => {
-    onUpdate({ ...item, voiceNotes: [...item.voiceNotes, note] })
   }
 
   const updatePhotoAnnotations = (photoId: string, annotations: import('../types').PhotoAnnotation[]) => {
@@ -80,48 +71,35 @@ export default function ChecklistItemComponent({ item, index, onUpdate }: Checkl
           />
 
           <div className="item-actions">
-            <button className="action-btn" onClick={() => setShowCamera(true)}>
-              <Camera size={18} /> Photo
-            </button>
-            <button className="action-btn" onClick={() => setShowVoice(true)}>
-              <Mic size={18} /> Voice
+            <button className="action-btn action-btn-photo" onClick={() => setShowCamera(true)}>
+              <Camera size={18} /> Take Photo
             </button>
           </div>
 
           {item.photos.length > 0 && (
             <div className="photo-grid">
               {item.photos.map(photo => (
-                <div key={photo.id} className="photo-thumb" onClick={() => setAnnotatingPhoto(photo)}>
-                  <img src={photo.dataUrl} alt={photo.caption || 'Photo'} />
-                  {photo.severity && <span className={`photo-severity severity-${photo.severity}`}>{photo.severity}</span>}
-                  {photo.annotations.length > 0 && <span className="photo-annotated"><Image size={12} /></span>}
+                <div key={photo.id} className="photo-card">
+                  <div className="photo-thumb" onClick={() => setAnnotatingPhoto(photo)}>
+                    <img src={photo.dataUrl} alt={photo.caption || 'Photo'} />
+                    {photo.severity && <span className={`photo-severity severity-${photo.severity}`}>{photo.severity}</span>}
+                    {photo.annotations.length > 0 && <span className="photo-annotated"><Image size={12} /></span>}
+                  </div>
+                  {photo.caption && <p className="photo-caption">{photo.caption}</p>}
+                  {photo.gps && (
+                    <div className="gps-stamp photo-gps">
+                      <MapPin size={12} />
+                      <span>{formatGPS(photo.gps)} · {formatTimestamp(photo.timestamp)}</span>
+                    </div>
+                  )}
                 </div>
               ))}
-            </div>
-          )}
-
-          {item.voiceNotes.length > 0 && (
-            <div className="voice-notes-list">
-              {item.voiceNotes.map(note => (
-                <div key={note.id} className="voice-note-item">
-                  <Mic size={14} />
-                  <p>{note.text}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {item.gps && (
-            <div className="gps-stamp">
-              <MapPin size={12} />
-              <span>{formatGPS(item.gps)} · {formatTimestamp(item.timestamp || item.gps.timestamp)}</span>
             </div>
           )}
         </div>
       )}
 
       {showCamera && <CameraCapture onCapture={addPhoto} onClose={() => setShowCamera(false)} />}
-      {showVoice && <VoiceNoteRecorder onSave={addVoiceNote} onClose={() => setShowVoice(false)} />}
       {annotatingPhoto && (
         <PhotoAnnotator
           imageUrl={annotatingPhoto.dataUrl}

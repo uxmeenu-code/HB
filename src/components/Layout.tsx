@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, ClipboardList, QrCode, FileText, Home } from 'lucide-react'
+import { LayoutDashboard, ClipboardList, Camera, FileText, Home } from 'lucide-react'
 import OfflineIndicator from './OfflineIndicator'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -8,7 +8,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/inspections', icon: ClipboardList, label: 'Inspections' },
-    { path: '/assets', icon: QrCode, label: 'Assets' },
+    { path: '/photos', icon: Camera, label: 'Photos' },
     { path: '/reports', icon: FileText, label: 'Reports' },
   ]
 

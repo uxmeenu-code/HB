@@ -9,12 +9,12 @@ export default function OfflineIndicator() {
       {isOnline ? (
         <>
           <Wifi size={14} />
-          <span>Online — All data stored locally</span>
+          <span>Offline — Photos stored locally on device</span>
         </>
       ) : (
         <>
           <WifiOff size={14} />
-          <span>Offline Mode — Working locally, no connection needed</span>
+          <span>Offline Mode — Photos saved locally, no connection needed</span>
         </>
       )}
     </div>

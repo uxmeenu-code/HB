@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'InspectField - Mobile Inspection App',
+        name: 'InspectField - Offline Photo Capture',
         short_name: 'InspectField',
-        description: 'Offline mobile inspection app for field teams',
+        description: 'Offline photo capture and annotation for field inspections',
         theme_color: '#0f766e',
         background_color: '#ffffff',
         display: 'standalone',

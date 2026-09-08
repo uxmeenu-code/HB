@@ -3,7 +3,7 @@ import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
 import InspectionList from './pages/InspectionList'
 import InspectionDetail from './pages/InspectionDetail'
-import Assets from './pages/Assets'
+import Photos from './pages/Photos'
 import Reports from './pages/Reports'
 
 export default function App() {
@@ -14,7 +14,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/inspections" element={<InspectionList />} />
         <Route path="/inspections/:id" element={<InspectionDetail />} />
-        <Route path="/assets" element={<Assets />} />
+        <Route path="/photos" element={<Photos />} />
         <Route path="/reports" element={<Reports />} />
       </Routes>
     </BrowserRouter>

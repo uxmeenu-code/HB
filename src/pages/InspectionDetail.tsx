@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, MapPin, PenTool, Send, Download } from 'lucide-react'
+import { ArrowLeft, Send, Download } from 'lucide-react'
 import Layout from '../components/Layout'
 import ChecklistItemComponent from '../components/ChecklistItem'
-import SignatureCapture from '../components/SignatureCapture'
 import { db } from '../db/database'
-import type { Inspection, Site, Asset, ChecklistItem, DigitalSignature } from '../types'
-import { getCurrentGPS, formatGPS, formatTimestamp } from '../utils/gps'
+import type { Inspection, Site, Asset, ChecklistItem } from '../types'
 import { generateInspectionPDF } from '../utils/pdf'
 
 export default function InspectionDetail() {
@@ -15,7 +13,6 @@ export default function InspectionDetail() {
   const [inspection, setInspection] = useState<Inspection | null>(null)
   const [site, setSite] = useState<Site | null>(null)
   const [asset, setAsset] = useState<Asset | null>(null)
-  const [showSignature, setShowSignature] = useState(false)
 
   const loadInspection = useCallback(async () => {
     if (!id) return
@@ -48,7 +45,6 @@ export default function InspectionDetail() {
 
     if (hasStarted && !inspection.startedAt) {
       updates.startedAt = new Date().toISOString()
-      updates.gps = await getCurrentGPS()
     }
 
     if (allDone) {
@@ -59,22 +55,14 @@ export default function InspectionDetail() {
     loadInspection()
   }
 
-  const handleSignature = async (signature: DigitalSignature) => {
-    if (!inspection) return
-    await db.inspections.update(inspection.id, { signature })
-    loadInspection()
-  }
-
   const submitInspection = async () => {
     if (!inspection) return
-    const gps = await getCurrentGPS()
     const allDone = inspection.items.every(i => i.status !== 'pending')
     const hasFailed = inspection.items.some(i => i.status === 'fail')
 
     await db.inspections.update(inspection.id, {
       status: allDone ? (hasFailed ? 'failed' : 'completed') : 'in_progress',
       completedAt: allDone ? new Date().toISOString() : undefined,
-      gps,
     })
     loadInspection()
   }
@@ -95,6 +83,7 @@ export default function InspectionDetail() {
   }
 
   const completedCount = inspection.items.filter(i => i.status !== 'pending').length
+  const photoCount = inspection.items.reduce((sum, i) => sum + i.photos.length, 0)
   const progress = Math.round((completedCount / inspection.items.length) * 100)
 
   return (
@@ -121,19 +110,14 @@ export default function InspectionDetail() {
           <div className="progress-bar">
             <div className="progress-fill" style={{ width: `${progress}%` }} />
           </div>
-          <span className="progress-label">{completedCount}/{inspection.items.length} items ({progress}%)</span>
+          <span className="progress-label">
+            {completedCount}/{inspection.items.length} items · {photoCount} photos
+          </span>
         </div>
 
         <div className={`status-banner status-${inspection.status}`}>
           Status: {inspection.status.replace('_', ' ')}
         </div>
-
-        {inspection.gps && (
-          <div className="gps-stamp detail-gps">
-            <MapPin size={14} />
-            <span>{formatGPS(inspection.gps)} · {formatTimestamp(inspection.gps.timestamp)}</span>
-          </div>
-        )}
 
         <div className="checklist">
           {inspection.items.map((item, index) => (
@@ -147,17 +131,6 @@ export default function InspectionDetail() {
         </div>
 
         <div className="detail-actions">
-          {!inspection.signature && (
-            <button className="btn btn-secondary" onClick={() => setShowSignature(true)}>
-              <PenTool size={18} /> Add Signature
-            </button>
-          )}
-          {inspection.signature && (
-            <div className="signature-preview">
-              <img src={inspection.signature.dataUrl} alt="Signature" />
-              <span>Signed by {inspection.signature.signerName}</span>
-            </div>
-          )}
           <button className="btn btn-primary" onClick={submitInspection}>
             <Send size={18} /> Submit Inspection
           </button>
@@ -168,13 +141,6 @@ export default function InspectionDetail() {
           )}
         </div>
       </div>
-
-      {showSignature && (
-        <SignatureCapture
-          onSave={handleSignature}
-          onClose={() => setShowSignature(false)}
-        />
-      )}
     </Layout>
   )
 }
