@@ -19,7 +19,22 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. Install as a PWA from the browser menu for a native app experience.
+The app runs at **http://localhost:5173**.
+
+### Preview in Cursor Cloud
+
+1. Make sure the dev server is running (`npm run dev`)
+2. In the agent run, open the **Ports** panel and click the forwarded link for port **5173**
+3. Do not use your machine's localhost unless Cursor is forwarding that port
+
+### Production preview
+
+```bash
+npm run build
+npm run preview
+```
+
+Then open port **4173** from the Ports panel.
 
 ## Usage
 
